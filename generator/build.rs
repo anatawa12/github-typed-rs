@@ -8,10 +8,10 @@ use std::io::{BufReader, BufWriter, Write};
 use std::process::{Command, Stdio};
 
 fn main() {
-    println!("cargo:rerun-if-changed=../schema/openapi-schema.json");
+    println!("cargo:rerun-if-changed=../schema/openapi-schema.patched.json");
     println!("cargo:rerun-if-changed=build.rs");
 
-    let json = File::open("../schema/openapi-schema.json")
+    let json = File::open("../schema/openapi-schema.patched.json")
         .expect("openapi-schema not found");
     let json = BufReader::new(json);
 

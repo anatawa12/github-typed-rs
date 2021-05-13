@@ -194,8 +194,7 @@ pub struct PathItem {
     pub servers: Option<Vec<Server>>,
     pub summary: Option<String>,
 }
-#[derive(Clone, PartialEq, Debug, Default, Deserialize, Serialize)]
-pub struct Paths {}
+pub type Paths = ::std::collections::BTreeMap<String, PathItem>;
 pub type Reference = ::std::collections::BTreeMap<String, serde_json::Value>;
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct RequestBody {
