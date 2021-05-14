@@ -1,6 +1,78 @@
 --- api.github.com.json
 +++ api.github.com.patched.json
-@@ -40651,10 +40651,10 @@
+@@ -25583,7 +25583,7 @@
+         }
+       }
+     },
+-    "/repos/{owner}/{repo}/commits/{commit_sha}/branches-where-head": {
++    "/repos/{owner}/{repo}/commits/{ref}/branches-where-head": {
+       "get": {
+         "summary": "List branches for HEAD commit",
+         "description": "Protected branches are available in public repositories with GitHub Free and GitHub Free for organizations, and in public and private repositories with GitHub Pro, GitHub Team, GitHub Enterprise Cloud, and GitHub Enterprise Server. For more information, see [GitHub's products](https://help.github.com/github/getting-started-with-github/githubs-products) in the GitHub Help documentation.\n\nReturns all branches where the given commit SHA is the HEAD, or latest commit for the branch.",
+@@ -25603,7 +25603,13 @@
+             "$ref": "#/components/parameters/repo"
+           },
+           {
+-            "$ref": "#/components/parameters/commit_sha"
++            "name": "ref",
++            "description": "ref parameter",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string"
++            }
+           }
+         ],
+         "responses": {
+@@ -25647,7 +25653,7 @@
+         }
+       }
+     },
+-    "/repos/{owner}/{repo}/commits/{commit_sha}/comments": {
++    "/repos/{owner}/{repo}/commits/{ref}/comments": {
+       "get": {
+         "summary": "List commit comments",
+         "description": "Use the `:commit_sha` to specify the commit that will have its comments listed.",
+@@ -25667,7 +25673,13 @@
+             "$ref": "#/components/parameters/repo"
+           },
+           {
+-            "$ref": "#/components/parameters/commit_sha"
++            "name": "ref",
++            "description": "ref parameter",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string"
++            }
+           },
+           {
+             "$ref": "#/components/parameters/per_page"
+@@ -25816,7 +25828,7 @@
+         }
+       }
+     },
+-    "/repos/{owner}/{repo}/commits/{commit_sha}/pulls": {
++    "/repos/{owner}/{repo}/commits/{ref}/pulls": {
+       "get": {
+         "summary": "List pull requests associated with a commit",
+         "description": "Lists the merged pull request that introduced the commit to the repository. If the commit is not present in the default branch, additionally returns open pull requests associated with the commit. The results may include open and closed pull requests. Additional preview headers may be required to see certain details for associated pull requests, such as whether a pull request is in a draft state. For more information about previews that might affect this endpoint, see the [List pull requests](https://docs.github.com/rest/reference/pulls#list-pull-requests) endpoint.",
+@@ -25836,7 +25848,13 @@
+             "$ref": "#/components/parameters/repo"
+           },
+           {
+-            "$ref": "#/components/parameters/commit_sha"
++            "name": "ref",
++            "description": "ref parameter",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string"
++            }
+           },
+           {
+             "$ref": "#/components/parameters/per_page"
+@@ -40651,10 +40669,10 @@
          }
        }
      },
@@ -13,7 +85,7 @@
          "tags": [
            "repos"
          ],
-@@ -40665,7 +40665,7 @@
+@@ -40665,7 +40683,7 @@
          },
          "parameters": [
            {
@@ -22,7 +94,7 @@
              "in": "path",
              "required": true,
              "schema": {
-@@ -40673,7 +40673,7 @@
+@@ -40673,7 +40691,7 @@
              }
            },
            {
@@ -31,7 +103,7 @@
              "in": "path",
              "required": true,
              "schema": {
-@@ -92640,4 +92640,4 @@
+@@ -92640,4 +92658,4 @@
        }
      }
    }
