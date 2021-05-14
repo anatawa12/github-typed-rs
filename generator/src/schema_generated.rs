@@ -193,6 +193,38 @@ pub struct PathItem {
     pub parameters: Option<Vec<serde_json::Value>>,
     pub servers: Option<Vec<Server>>,
     pub summary: Option<String>,
+    #[serde(flatten)]
+    pub requests: ::std::collections::BTreeMap<HttpMethod, Operation>
+}
+use derive_more::Display;
+#[derive(Ord, PartialOrd, Eq, Copy)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[derive(Display)]
+pub enum HttpMethod {
+    #[serde(rename = "delete")]
+    #[display(fmt = "delete")]
+    Delete,
+    #[serde(rename = "get")]
+    #[display(fmt = "get")]
+    Get,
+    #[serde(rename = "head")]
+    #[display(fmt = "head")]
+    Head,
+    #[serde(rename = "options")]
+    #[display(fmt = "options")]
+    Options,
+    #[serde(rename = "patch")]
+    #[display(fmt = "patch")]
+    Patch,
+    #[serde(rename = "post")]
+    #[display(fmt = "post")]
+    Post,
+    #[serde(rename = "put")]
+    #[display(fmt = "put")]
+    Put,
+    #[serde(rename = "trace")]
+    #[display(fmt = "trace")]
+    Trace,
 }
 pub type Paths = ::std::collections::BTreeMap<String, PathItem>;
 pub type Reference = ::std::collections::BTreeMap<String, serde_json::Value>;
