@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
 pub use debugging::dump_tree;
@@ -8,41 +7,13 @@ use crate::schema::PathItem;
 #[derive(Default, Clone)]
 pub struct ApiTreeElement {
     item: Option<PathItem>,
-    children: BTreeMap<PathElementName, Box<ApiTreeElement>>,
+    children: BTreeMap<String, Box<ApiTreeElement>>,
+    named_child: Option<(String, Box<ApiTreeElement>)>,
 }
 
-#[derive(Eq, PartialEq, Clone)]
-pub enum PathElementName {
+enum PathElementName {
     Fixed(String),
     Named(String),
-}
-
-impl Ord for PathElementName {
-    fn cmp(&self, other: &Self) -> Ordering {
-        use PathElementName::*;
-        match (self, other) {
-            (Fixed(self_name), Fixed(other_name)) => self_name.cmp(other_name),
-            (Named(self_name), Named(other_name)) => self_name.cmp(other_name),
-
-            (Named(_), Fixed(_)) => Ordering::Less,
-            (Fixed(_), Named(_)) => Ordering::Greater,
-        }
-    }
-}
-
-impl PartialOrd for PathElementName {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl ToString for PathElementName {
-    fn to_string(&self) -> String {
-        match self {
-            PathElementName::Fixed(name) => format!("{}", name),
-            PathElementName::Named(name) => format!("{{{}}}", name),
-        }
-    }
 }
 
 pub fn parse_path(path: &str, item: PathItem, mut parent: &mut ApiTreeElement) {
@@ -62,26 +33,45 @@ pub fn parse_path(path: &str, item: PathItem, mut parent: &mut ApiTreeElement) {
             None => break,
             Some(v) => v,
         };
-        let name = parse_path_element(prev);
+        match parse_path_element(prev) {
+            PathElementName::Fixed(name) => {
+                if !parent.children.contains_key(&name) {
+                    parent
+                        .children
+                        .insert(name.clone(), Box::new(ApiTreeElement::default()));
+                }
+                parent = parent.children.get_mut(&name).unwrap();
+            }
+            PathElementName::Named(name) => {
+                let named_child = parent
+                    .named_child
+                    .get_or_insert_with(|| (name.clone(), Default::default()));
+                assert_eq!(&named_child.0, &name, "multiple named child found: {} and {}", &named_child.0, &name);
 
-        if !parent.children.contains_key(&name) {
-            parent
-                .children
-                .insert(name.clone(), Box::new(ApiTreeElement::default()));
+                parent = &mut named_child.1;
+            }
         }
-        parent = parent.children.get_mut(&name).unwrap();
-
         prev = cur;
     }
 
-    let name = parse_path_element(prev);
+    match parse_path_element(prev) {
+        PathElementName::Fixed(name) => {
+            if !parent.children.contains_key(&name) {
+                parent
+                    .children
+                    .insert(name.clone(), Box::new(ApiTreeElement::default()));
+            }
+            parent.children.get_mut(&name).unwrap().as_mut().item = Some(item);
+        }
+        PathElementName::Named(name) => {
+            let named_child = parent
+                .named_child
+                .get_or_insert_with(|| (name.clone(), Default::default()));
+            assert_eq!(&named_child.0, &name, "multiple named child found: {}", &path);
 
-    if !parent.children.contains_key(&name) {
-        parent
-            .children
-            .insert(name.clone(), Box::new(ApiTreeElement::default()));
+            named_child.1.item = Some(item);
+        }
     }
-    parent.children.get_mut(&name).unwrap().as_mut().item = Some(item);
 }
 
 fn parse_path_element(path_element_in: &str) -> PathElementName {
@@ -112,7 +102,7 @@ mod debugging {
     pub fn dump_tree(tree: &ApiTreeElement) {
         dump_tree_internal(
             (
-                &PathElementName::Fixed(String::new()),
+                &String::new(),
                 &Box::new((*tree).clone()),
             ),
             &(String::new(), String::new()),
@@ -120,7 +110,7 @@ mod debugging {
     }
 
     fn dump_tree_internal<'a>(
-        current: (&'a PathElementName, &'a Box<ApiTreeElement>),
+        current: (&'a String, &'a Box<ApiTreeElement>),
         (indent_name, indent_element): &(String, String),
     ) {
         print!("{}", indent_name);
@@ -129,7 +119,7 @@ mod debugging {
         // run methods
         if let Some(item) = &current.1.item {
             let header_indent = &format!("{} :-", indent_element);
-            let header_indent_end = &if current.1.children.is_empty() {
+            let header_indent_end = &if current.1.named_child.is_none() && current.1.children.is_empty() {
                 format!("{} `-", indent_element)
             } else {
                 format!("{} +-", indent_element)
@@ -140,9 +130,35 @@ mod debugging {
                 } else {
                     header_indent
                 };
-                println!("{}{}: {}", indent, method, operation.description
-                    .as_ref().and_then(|x| x.lines().next()).unwrap_or("no desc"));
+                println!(
+                    "{}{}: {}",
+                    indent,
+                    method,
+                    operation
+                        .description
+                        .as_ref()
+                        .and_then(|x| x.lines().next())
+                        .unwrap_or("no desc")
+                );
             });
+        }
+
+        // run named child
+        if let Some((name, child)) = &current.1.named_child {
+            dump_tree_internal(
+                (&format!("{{{}}}", name), child),
+                &if current.1.children.is_empty() {
+                    (
+                        format!("{} `-", indent_element),
+                        format!("{}   ", indent_element),
+                    )
+                } else {
+                    (
+                        format!("{} +-", indent_element),
+                        format!("{} | ", indent_element),
+                    )
+                }
+            )
         }
 
         // run children
