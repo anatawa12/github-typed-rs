@@ -46,7 +46,11 @@ pub fn parse_path(path: &str, item: PathItem, mut parent: &mut ApiTreeElement) {
                 let named_child = parent
                     .named_child
                     .get_or_insert_with(|| (name.clone(), Default::default()));
-                assert_eq!(&named_child.0, &name, "multiple named child found: {} and {}", &named_child.0, &name);
+                assert_eq!(
+                    &named_child.0, &name,
+                    "multiple named child found: {} and {}",
+                    &named_child.0, &name
+                );
 
                 parent = &mut named_child.1;
             }
@@ -67,7 +71,11 @@ pub fn parse_path(path: &str, item: PathItem, mut parent: &mut ApiTreeElement) {
             let named_child = parent
                 .named_child
                 .get_or_insert_with(|| (name.clone(), Default::default()));
-            assert_eq!(&named_child.0, &name, "multiple named child found: {}", &path);
+            assert_eq!(
+                &named_child.0, &name,
+                "multiple named child found: {}",
+                &path
+            );
 
             named_child.1.item = Some(item);
         }
@@ -101,10 +109,7 @@ mod debugging {
 
     pub fn dump_tree(tree: &ApiTreeElement) {
         dump_tree_internal(
-            (
-                &String::new(),
-                &Box::new((*tree).clone()),
-            ),
+            (&String::new(), &Box::new((*tree).clone())),
             &(String::new(), String::new()),
         );
     }
@@ -119,11 +124,12 @@ mod debugging {
         // run methods
         if let Some(item) = &current.1.item {
             let header_indent = &format!("{} :-", indent_element);
-            let header_indent_end = &if current.1.named_child.is_none() && current.1.children.is_empty() {
-                format!("{} `-", indent_element)
-            } else {
-                format!("{} +-", indent_element)
-            };
+            let header_indent_end =
+                &if current.1.named_child.is_none() && current.1.children.is_empty() {
+                    format!("{} `-", indent_element)
+                } else {
+                    format!("{} +-", indent_element)
+                };
             for_each_with_is_end(item.requests.iter(), |(method, operation), is_end| {
                 let indent = if is_end {
                     header_indent_end
@@ -135,10 +141,14 @@ mod debugging {
                     indent,
                     method,
                     operation
-                        .description
+                        .summary
                         .as_ref()
-                        .and_then(|x| x.lines().next())
-                        .unwrap_or("no desc")
+                        .map(|x| x.as_str())
+                        .unwrap_or_else(|| operation
+                            .description
+                            .as_ref()
+                            .and_then(|x| x.lines().next())
+                            .unwrap_or("no desc"))
                 );
             });
         }
@@ -157,7 +167,7 @@ mod debugging {
                         format!("{} +-", indent_element),
                         format!("{} | ", indent_element),
                     )
-                }
+                },
             )
         }
 
