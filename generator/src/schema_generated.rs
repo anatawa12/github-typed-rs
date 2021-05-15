@@ -323,7 +323,14 @@ pub struct Schema {
 #[doc = " Schema and content are mutually exclusive, at least one is required"]
 pub type SchemaXORContent = serde_json::Value;
 pub type SecurityRequirement = ::std::collections::BTreeMap<String, Vec<String>>;
-pub type SecurityScheme = serde_json::Value;
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum SecurityScheme {
+    APIKey(ApikeySecurityScheme),
+    HTTP(HttpsecurityScheme),
+    OAuth2(Oauth2SecurityScheme),
+    OpenIdConnect(OpenIdConnectSecurityScheme),
+}
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct Server {
     pub description: Option<String>,
