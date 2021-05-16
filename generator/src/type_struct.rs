@@ -1,10 +1,22 @@
-use crate::schema::Schema;
 use std::collections::BTreeMap;
+use std::fmt;
+use std::io;
+
+use crate::schema::Schema;
 
 #[derive(Debug)]
 pub(crate) enum FunctionParamType {
     String,
     Integer,
+}
+
+impl fmt::Display for FunctionParamType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FunctionParamType::String => f.write_str("string"),
+            FunctionParamType::Integer => f.write_str("integer"),
+        }
+    }
 }
 
 impl FunctionParamType {
@@ -41,4 +53,19 @@ pub(crate) struct Function {
 #[derive(Debug)]
 pub(crate) struct Type {
     pub(crate) methods: BTreeMap<String, Function>,
+}
+
+impl Type {
+    pub(crate) fn dump_to<W: io::Write>(&self, mut out: W, type_name: &str) -> io::Result<()> {
+        writeln!(out, "impl {} {{", type_name)?;
+        for (name, func) in &self.methods {
+            write!(out, "    fn {}(", name)?;
+            for p in &func.params {
+                write!(out, "{}: {}, ", &p.name, p.param_type)?;
+            }
+            writeln!(out, ") -> {};", func.returns)?;
+        }
+        writeln!(out, "}}")?;
+        Ok(())
+    }
 }
