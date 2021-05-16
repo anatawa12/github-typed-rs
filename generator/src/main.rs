@@ -24,9 +24,7 @@ fn main() {
 
     dump_tree(&root);
 
-    let ctx = context::Context {
-        components: schema.components.unwrap(),
-    };
+    let mut ctx = context::Context::new(schema.components.unwrap());
 
     println!("{:#?}", ctx.transform(&root))
 }

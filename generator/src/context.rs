@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 
 use crate::api_tree::ApiTreeElement;
-use crate::english::{as_singular, is_plural};
+use crate::english::{as_singular, is_plural, pascalize};
 use crate::schema::*;
 
 macro_rules! put_or_crash_with_path {
-    ($map: expr, $key: expr, $value: expr, $path: expr) => {
+    ($map: expr, $key: expr, $value: expr, $path: expr $(,)?) => {
         $map.insert($key, $value)
             .map(|_| panic!("duplicate element: {}", $path));
     };
@@ -14,6 +14,7 @@ macro_rules! put_or_crash_with_path {
 
 pub(crate) struct Context {
     pub(crate) components: Components,
+    pub(crate) types: BTreeMap<String, Type>,
 }
 
 #[derive(Debug)]
@@ -25,7 +26,7 @@ pub(crate) enum FunctionParamType {
 impl FunctionParamType {
     fn from(schema: &Schema) -> FunctionParamType {
         if let Some(ref type_) = schema.type_ {
-            return FunctionParamType::from_str(type_)
+            return FunctionParamType::from_str(type_);
         } else if let Some(_) = schema.one_of {
             return FunctionParamType::String;
         }
@@ -49,11 +50,23 @@ pub(crate) struct FunctionParam {
 #[derive(Debug)]
 pub(crate) struct Function {
     pub(crate) params: Vec<FunctionParam>,
-    pub(crate) children: BTreeMap<String, Function>,
+    pub(crate) returns: String,
+}
+
+#[derive(Debug)]
+pub(crate) struct Type {
+    pub(crate) methods: BTreeMap<String, Function>,
 }
 
 impl Context {
-    pub(crate) fn transform<'a>(&'a self, elem: &'a ApiTreeElement) -> Function {
+    pub(crate) fn new(components: Components) -> Self {
+        Self {
+            components,
+            types: BTreeMap::new(),
+        }
+    }
+
+    pub(crate) fn transform<'a>(&'a mut self, elem: &'a ApiTreeElement) -> Type {
         self.transform_internal(
             elem,
             true,
@@ -61,111 +74,121 @@ impl Context {
                 parent: None,
                 current: "THE_ROOT",
             },
+            "",
         )
     }
 
     fn transform_internal<'a>(
-        &'a self,
+        &'a mut self,
         elem: &'a ApiTreeElement,
         add_named_child: bool,
         path: PathBuilder,
-    ) -> Function {
+        type_name: &str,
+    ) -> Type {
         let mut methods = BTreeMap::<String, Function>::new();
 
         if add_named_child {
             if let Some((child_name, value)) = elem.named_child.as_ref() {
-                let new_path = path.child(child_name);
-                put_or_crash_with_path!(
-                    methods,
-                    (*child_name).clone(),
-                    self.build_plural_child(value, child_name, new_path, true),
-                    new_path
+                self.add_named_child_with(
+                    &mut methods,
+                    child_name,
+                    child_name,
+                    value,
+                    path,
+                    type_name,
                 );
             }
         }
 
         for (fixed_name, child) in &elem.children {
             let named_child_added =
-                self.try_add_named_child(&mut methods, &fixed_name, &child, path);
+                self.try_add_named_child(&mut methods, &fixed_name, &child, path, type_name);
             if child.item.is_some() || !child.children.is_empty() {
                 let new_path = path.child(fixed_name);
-                put_or_crash_with_path!(
-                    methods,
-                    (*fixed_name).clone(),
-                    self.transform_internal(child, !named_child_added, new_path),
-                    new_path
-                );
+                let new_type_name = format!("{}{}", type_name, pascalize(&fixed_name));
+                let type_ =
+                    self.transform_internal(child, !named_child_added, new_path, &new_type_name);
+                put_or_crash_with_path!(self.types, new_type_name.clone(), type_, &new_type_name,);
+                let func = Function {
+                    params: vec![],
+                    returns: new_type_name,
+                };
+                put_or_crash_with_path!(methods, (*fixed_name).clone(), func, new_path);
             }
         }
 
-        Function {
-            children: methods,
-            params: vec![],
-        }
+        Type { methods }
     }
 
     fn try_add_named_child(
-        &self,
+        &mut self,
         methods: &mut BTreeMap<String, Function>,
         fixed_name: &String,
         child: &Box<ApiTreeElement>,
         path: PathBuilder,
+        type_name: &str,
     ) -> bool {
         if let Some((child_name, value)) = child.named_child.as_ref() {
             if is_plural(&*fixed_name) {
                 let name = as_singular(fixed_name);
-                if self.try_add_named_child_with(
-                    methods,
-                    &name,
-                    child_name,
-                    value,
-                    path,
-                ) {
-                    return true
+                if self.try_add_named_child_with(methods, &name, child_name, value, path, type_name)
+                {
+                    return true;
                 }
             }
             if child.item.is_none() && child.children.is_empty() {
                 if self.try_add_named_child_with(
-                    methods,
-                    fixed_name,
-                    child_name,
-                    value,
-                    path,
+                    methods, fixed_name, child_name, value, path, type_name,
                 ) {
-                    return true
+                    return true;
                 }
             }
         }
         false
     }
 
-    fn try_add_named_child_with(
-        &self,
+    fn add_named_child_with(
+        &mut self,
         methods: &mut BTreeMap<String, Function>,
         name: &String,
         param_name: &str,
         value: &Box<ApiTreeElement>,
         path: PathBuilder,
+        type_name: &str,
+    ) {
+        let new_path = path.child(&name);
+        let new_type_name = format!("{}{}", type_name, pascalize(name));
+        put_or_crash_with_path!(
+            methods,
+            name.clone(),
+            self.build_plural_child(value, param_name, new_path, true, new_type_name),
+            new_path
+        );
+    }
+
+    fn try_add_named_child_with(
+        &mut self,
+        methods: &mut BTreeMap<String, Function>,
+        name: &String,
+        param_name: &str,
+        value: &Box<ApiTreeElement>,
+        path: PathBuilder,
+        type_name: &str,
     ) -> bool {
         if !methods.contains_key(name) {
-            let new_path = path.child(&name);
-            put_or_crash_with_path!(
-                methods,
-                name.clone(),
-                self.build_plural_child(value, param_name, new_path, true),
-                new_path
-            );
+            self.add_named_child_with(methods, name, param_name, value, path, type_name);
             return true;
         }
         false
     }
 
     fn build_plural_child(
-        &self,
+        &mut self,
         mut child: &ApiTreeElement,
         param_name: &str,
         path: PathBuilder,
         with_children: bool,
+        new_type_name: String,
     ) -> Function {
         let mut param_names = vec![param_name];
         if with_children {
@@ -188,15 +211,17 @@ impl Context {
         let params: Vec<_> = param_names
             .iter()
             .map(|name| self.get_path_param(item, name))
-            .collect();
-        let mut func = self.transform_internal(child, true, path);
-        for x in params {
-            func.params.push(FunctionParam {
+            .map(|x| FunctionParam {
                 name: x.name.clone(),
                 param_type: FunctionParamType::from(&self.resolve(x.schema.as_ref().unwrap())),
             })
+            .collect();
+        let type_ = self.transform_internal(child, true, path, &new_type_name);
+        put_or_crash_with_path!(self.types, new_type_name.clone(), type_, &new_type_name);
+        Function {
+            params,
+            returns: new_type_name.clone(),
         }
-        func
     }
 
     fn find_iterm_in<'a>(&self, e: &'a ApiTreeElement) -> &'a PathItem {
