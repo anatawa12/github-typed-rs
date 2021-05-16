@@ -4,6 +4,7 @@ use std::fmt::{Display, Formatter};
 use crate::api_tree::ApiTreeElement;
 use crate::english::{as_singular, is_plural, pascalize};
 use crate::schema::*;
+use crate::type_struct::*;
 
 macro_rules! put_or_crash_with_path {
     ($map: expr, $key: expr, $value: expr, $path: expr $(,)?) => {
@@ -15,47 +16,6 @@ macro_rules! put_or_crash_with_path {
 pub(crate) struct Context {
     pub(crate) components: Components,
     pub(crate) types: BTreeMap<String, Type>,
-}
-
-#[derive(Debug)]
-pub(crate) enum FunctionParamType {
-    String,
-    Integer,
-}
-
-impl FunctionParamType {
-    fn from(schema: &Schema) -> FunctionParamType {
-        if let Some(ref type_) = schema.type_ {
-            return FunctionParamType::from_str(type_);
-        } else if let Some(_) = schema.one_of {
-            return FunctionParamType::String;
-        }
-        panic!("invalid type: {:?}", schema);
-    }
-    fn from_str(name: &str) -> FunctionParamType {
-        match name {
-            "string" => FunctionParamType::String,
-            "integer" => FunctionParamType::Integer,
-            _ => panic!("invalid type: {}", name),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct FunctionParam {
-    pub(crate) name: String,
-    pub(crate) param_type: FunctionParamType,
-}
-
-#[derive(Debug)]
-pub(crate) struct Function {
-    pub(crate) params: Vec<FunctionParam>,
-    pub(crate) returns: String,
-}
-
-#[derive(Debug)]
-pub(crate) struct Type {
-    pub(crate) methods: BTreeMap<String, Function>,
 }
 
 impl Context {

@@ -9,6 +9,7 @@ mod schema;
 mod api_tree;
 mod english;
 mod context;
+mod type_struct;
 
 fn main() {
     let json = File::open("schema/api.github.com.patched.json")
