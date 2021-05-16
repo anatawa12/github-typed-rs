@@ -6,9 +6,9 @@ use crate::schema::PathItem;
 
 #[derive(Default, Clone)]
 pub struct ApiTreeElement {
-    item: Option<PathItem>,
-    children: BTreeMap<String, Box<ApiTreeElement>>,
-    named_child: Option<(String, Box<ApiTreeElement>)>,
+    pub(crate) item: Option<PathItem>,
+    pub(crate) children: BTreeMap<String, Box<ApiTreeElement>>,
+    pub(crate) named_child: Option<(String, Box<ApiTreeElement>)>,
 }
 
 enum PathElementName {

@@ -7,6 +7,8 @@ use crate::api_tree::{dump_tree, parse_path, ApiTreeElement};
 #[allow(dead_code)]
 mod schema;
 mod api_tree;
+mod english;
+mod context;
 
 fn main() {
     let json = File::open("schema/api.github.com.patched.json")
@@ -21,4 +23,10 @@ fn main() {
     }
 
     dump_tree(&root);
+
+    let ctx = context::Context {
+        components: schema.components.unwrap(),
+    };
+
+    println!("{:#?}", ctx.transform(&root))
 }
