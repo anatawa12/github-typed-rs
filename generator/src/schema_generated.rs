@@ -180,7 +180,26 @@ pub struct Operation {
     pub tags: Option<Vec<String>>,
 }
 #[derive(Clone, PartialEq, Debug, Default, Deserialize, Serialize)]
-pub struct Parameter {}
+pub struct Parameter {
+    pub name: String,
+    #[serde(rename = "in")]
+    pub in_: String,
+    pub description: Option<String>,
+    #[serde(default)]
+    pub required: bool,
+    #[serde(default)]
+    pub deprecated: bool,
+    #[serde(default, rename = "allowEmptyValue")]
+    pub allow_empty_value: bool,
+    pub style: Option<String>,
+    pub explode: Option<bool>,
+    #[serde(default, rename = "allowReserved")]
+    pub allow_reserved: bool,
+    pub schema: Option<MayRef<Schema>>,
+    pub scopes: Option<::std::collections::BTreeMap<String, MediaType>>,
+    pub example: Option<::serde_json::Value>,
+    pub examples: Option<::std::collections::BTreeMap<String, MayRef<Example>>>,
+}
 #[doc = " Parameter location"]
 pub type ParameterLocation = serde_json::Value;
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
@@ -196,7 +215,7 @@ pub struct PathItem {
     #[serde(rename = "$ref")]
     pub _ref: Option<String>,
     pub description: Option<String>,
-    pub parameters: Option<Vec<MayRef<Reference>>>,
+    pub parameters: Option<Vec<MayRef<Parameter>>>,
     pub servers: Option<Vec<Server>>,
     pub summary: Option<String>,
     #[serde(flatten)]
@@ -236,7 +255,7 @@ pub type Paths = ::std::collections::BTreeMap<String, PathItem>;
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct Reference {
     #[serde(rename = "$ref")]
-    ref_: String,
+    pub ref_: String,
 }
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct RequestBody {
