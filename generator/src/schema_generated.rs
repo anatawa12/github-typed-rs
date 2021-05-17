@@ -134,7 +134,12 @@ pub struct Link {
     pub server: Option<Server>,
 }
 #[derive(Clone, PartialEq, Debug, Default, Deserialize, Serialize)]
-pub struct MediaType {}
+pub struct MediaType {
+    pub schema: Option<MayRef<Schema>>,
+    pub example: Option<::serde_json::Value>,
+    pub examples: Option<::std::collections::BTreeMap<String, MayRef<Example>>>,
+}
+
 #[serde(rename = "OAuth2SecurityScheme")]
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct Oauth2SecurityScheme {
