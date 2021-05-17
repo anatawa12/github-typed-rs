@@ -23,6 +23,7 @@ fn main() {
     for (path, item) in schema.paths {
         parse_path(&path, item.clone(), &mut root);
     }
+    root.children.remove("scim");
 
     dump_tree(&root);
 
