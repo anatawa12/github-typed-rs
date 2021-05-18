@@ -12,6 +12,7 @@ mod english;
 #[allow(dead_code)]
 mod schema;
 mod type_struct;
+mod type_schema;
 
 fn main() {
     let json = File::open("schema/api.github.com.patched.json").expect("openapi-schema not found");

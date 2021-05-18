@@ -133,6 +133,7 @@ pub struct Link {
     pub request_body: Option<serde_json::Value>,
     pub server: Option<Server>,
 }
+
 #[derive(Clone, PartialEq, Debug, Default, Deserialize, Serialize)]
 pub struct MediaType {
     pub schema: Option<MayRef<Schema>>,
@@ -148,6 +149,7 @@ pub struct Oauth2SecurityScheme {
     #[serde(rename = "type")]
     pub type_: String,
 }
+
 #[serde(rename = "OAuthFlows")]
 #[derive(Clone, PartialEq, Debug, Default, Deserialize, Serialize)]
 pub struct OauthFlows {
@@ -291,10 +293,10 @@ pub enum SchemaAdditionalProperties {
 pub struct Schema {
     #[serde(rename = "additionalProperties")]
     pub additional_properties: Option<SchemaAdditionalProperties>,
-    #[serde(rename = "allOf")]
-    pub all_of: Option<Vec<MayRef<Schema>>>,
-    #[serde(rename = "anyOf")]
-    pub any_of: Option<Vec<MayRef<Schema>>>,
+    #[serde(rename = "allOf", default)]
+    pub all_of: Vec<MayRef<Schema>>,
+    #[serde(rename = "anyOf", default)]
+    pub any_of: Vec<MayRef<Schema>>,
     pub default: Option<serde_json::Value>,
     pub deprecated: Option<bool>,
     pub description: Option<String>,
@@ -328,13 +330,14 @@ pub struct Schema {
     pub multiple_of: Option<f64>,
     pub not: Option<Box<Schema>>,
     pub nullable: Option<bool>,
-    #[serde(rename = "oneOf")]
-    pub one_of: Option<Vec<Schema>>,
+    #[serde(rename = "oneOf", default)]
+    pub one_of: Vec<Schema>,
     pub pattern: Option<String>,
     pub properties: Option<::std::collections::BTreeMap<String, Schema>>,
     #[serde(rename = "readOnly")]
     pub read_only: Option<bool>,
-    pub required: Option<Vec<String>>,
+    #[serde(default)]
+    pub required: Vec<String>,
     pub title: Option<String>,
     #[serde(rename = "type")]
     pub type_: Option<String>,
@@ -344,6 +347,7 @@ pub struct Schema {
     pub write_only: Option<bool>,
     pub xml: Option<Xml>,
 }
+
 #[doc = " Schema and content are mutually exclusive, at least one is required"]
 pub type SchemaXORContent = serde_json::Value;
 pub type SecurityRequirement = ::std::collections::BTreeMap<String, Vec<String>>;

@@ -23,7 +23,7 @@ impl FunctionParamType {
     pub(crate) fn from(schema: &Schema) -> FunctionParamType {
         if let Some(ref type_) = schema.type_ {
             return FunctionParamType::from_str(type_);
-        } else if let Some(_) = schema.one_of {
+        } else if schema.one_of.len() != 0 {
             return FunctionParamType::String;
         }
         panic!("invalid type: {:?}", schema);
